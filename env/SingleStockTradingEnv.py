@@ -158,8 +158,8 @@ class SingleStockTradingEnv(gym.Env):
     @staticmethod
     def action_mask_func(obs: th.Tensor) -> th.Tensor:
         if obs[-1] == 1:
-            return th.Tensor([1, 1, 0])
+            return th.Tensor([0, 0, -th.inf])
         elif obs[-1] == 0:
-            return th.Tensor([0, 1, 1])
+            return th.Tensor([-th.inf, 0, 0])
         else:
             raise ValueError(f'Invalid obs {obs}')

@@ -1,6 +1,7 @@
-from typing import Callable, Type, TypeVar, Union
+from typing import Callable, Dict, Type, TypeVar, Union
 
 import numpy as np
+from stable_baselines3.common.policies import BasePolicy
 from stable_baselines3.common.type_aliases import GymEnv
 from stable_baselines3.dqn import DQN
 from stable_baselines3.dqn.policies import DQNPolicy
@@ -28,6 +29,10 @@ SelfMaskableDQN = TypeVar("SelfMaskableDQN", bound="MaskableDQN")
 
 
 class MaskableDQN(DQN):
+    policy_aliases: Dict[str, Type[BasePolicy]] = {
+        "MlpPolicy": MaskableDQNPolicy,
+    }
+    
     def __init__(
         self,
         policy: Union[str, Type[MaskableDQNPolicy]],
