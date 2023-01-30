@@ -6,6 +6,10 @@ import optuna
 GAMMA = 1
 TRAIN_TIME_STEP = 2000 * 100
 
+
+# ------------------------------------------------
+# for maskable algorithmns in single stock trading
+
 def sample_mppo_param(trial: optuna.Trial) -> Tuple[Dict, int]:
     '''Sample hyperparameters and return them in a dictionary for model initiation.'''
     learning_rate = 3 * 10 ** (trial.suggest_int('learning_rate_3_exp', -5, -3))
@@ -133,3 +137,30 @@ def sample_miqn_param(trial: optuna.Trial) -> Tuple[Dict, int]:
         'net_arch': net_arch_layers
         }
             }, train_time_step
+
+
+# ---------------------------------------------------
+# for actor-critor algorithmns in multi-stock trading
+
+def sample_a2c_param(trial: optuna.Trial) -> Tuple[Dict, int]:
+    '''Sample hyperparameters and return them in a dictionary for model initiation.'''
+    learning_rate = 3 * 10 ** (trial.suggest_int('learning_rate_3_exp', -5, -3))
+    n_steps = 2 ** trial.suggest_int('n_steps_2exp', 0, 8)
+    rms_prop_eps = 10 ** trial.suggest_int('rms_prop_eps_exp', -5, -8)
+    net_arch_layers = [2 ** trial.suggest_int('net_arch_dim_2exp', 6, 10)] \
+        * trial.suggest_int('net_arch_layers', 3, 5)
+
+    gamma = GAMMA
+    train_time_step = TRAIN_TIME_STEP
+
+    return {
+        'learning_rate': learning_rate,
+        'n_steps': n_steps,
+        'rms_prop_eps': rms_prop_eps,
+        'gamma': gamma,
+        'policy_kwargs': { 'net_arch': net_arch_layers }
+            }, train_time_step
+
+
+# TODO: tqc
+# TODO: a2c * iqn

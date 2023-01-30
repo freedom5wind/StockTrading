@@ -43,7 +43,8 @@ class MultiStockTradingEnv(gym.Env):
         self.df.set_index(['date', 'tic'], inplace=True)
 
         # Observation space includes n features for each day and previous action.
-        self.observation_shape = (self.stack_frame * self.feature_dims + self.n_tickers + 1,)
+        self.observation_shape = \
+            (self.stack_frame * self.feature_dims * self.n_tickers + (self.n_tickers + 1),)
         # Action space includes cash(index 0) and n tickers.
         self.action_space = spaces.Box(low=0, high=1, shape=(self.n_tickers + 1,)) 
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.observation_shape)
@@ -67,7 +68,7 @@ class MultiStockTradingEnv(gym.Env):
         return self.state
 
     def step(self, action: np.array) -> Tuple[np.array, float, bool, Dict]:
-        assert len(action) == self.feature_dims + 1, f"Invalid action {action}."
+        assert len(action) == self.n_tickers + 1, f"Invalid action {action}."
         action = scipy.special.softmax(action)
 
         self.terminal = self.day >= self.df.shape[0] - 2
@@ -103,5 +104,5 @@ class MultiStockTradingEnv(gym.Env):
     @property
     def changes(self) -> np.array:
         cur_dates = self.date[self.day]
-        changes = self.df.loc[cur_dates]['change'].to_numpy()
+        changes = (self.df.loc[cur_dates]['change'] / 100).to_numpy()
         return np.insert(changes, 0, 1)
