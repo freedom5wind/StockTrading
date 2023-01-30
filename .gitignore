@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 
 datasets/
+models/
+tensorboard_log/

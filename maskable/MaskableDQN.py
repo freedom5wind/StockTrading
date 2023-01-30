@@ -1,9 +1,7 @@
-from typing import Callable, Dict, Optional, Tuple, Type, TypeVar, Union
+from typing import Callable, Type, TypeVar, Union
 
 import numpy as np
-from stable_baselines3.common.preprocessing import maybe_transpose
 from stable_baselines3.common.type_aliases import GymEnv
-from stable_baselines3.common.utils import is_vectorized_observation
 from stable_baselines3.dqn import DQN
 from stable_baselines3.dqn.policies import DQNPolicy
 import torch as th
@@ -34,16 +32,25 @@ class MaskableDQN(DQN):
         self,
         policy: Union[str, Type[MaskableDQNPolicy]],
         env: Union[GymEnv, str],
-        action_mask_func: Callable[[th.Tensor], th.Tensor],
         **kwargs
     ):
-        '''Action_mask_func should return -inf for invalid actions.'''
         super().__init__(policy, env, **kwargs)
+        self.action_mask_func = env.action_mask_func
         assert self.action_space.n == \
-            action_mask_func(th.zeros(self.observation_space.sample().shape)).shape[0], \
+            self.action_mask_func(th.zeros_like(th.tensor(self.observation_space.sample()))).shape[0], \
             'Invalid action mask function.'
-        self.action_mask_func = action_mask_func
-        self.policy.action_mask_func = action_mask_func
+        self.policy.action_mask_func = self.action_mask_func
+
+        # Don't try this at home.
+        # Inject sample() to self.action_space.
+        self.action_space.parent_agent = self
+        def masked_sample(obj):
+            action_masks = np.array(obj.parent_agent.env.env_method('action_masks'))
+            valid_action = obj.np_random.randint(action_masks.sum())
+            idx = np.searchsorted(action_masks.cumsum(), valid_action + 1)
+            return idx
+        from types import MethodType
+        self.action_space.sample = MethodType(masked_sample, self.action_space)
 
     def train(self, gradient_steps: int, batch_size: int = 100) -> None:
         # Switch to train mode (this affects batch norm / dropout)
@@ -97,43 +104,6 @@ class MaskableDQN(DQN):
         self.logger.record("train/n_updates",
                            self._n_updates, exclude="tensorboard")
         self.logger.record("train/loss", np.mean(losses))
-
-    def predict(
-        self,
-        observation: Union[np.ndarray, Dict[str, np.ndarray]],
-        state: Optional[Tuple[np.ndarray, ...]] = None,
-        episode_start: Optional[np.ndarray] = None,
-        deterministic: bool = False,
-    ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
-        """
-        Overrides the base_class predict function to include epsilon-greedy exploration.
-
-        :param observation: the input observation
-        :param state: The last states (can be None, used in recurrent policies)
-        :param episode_start: The last masks (can be None, used in recurrent policies)
-        :param deterministic: Whether or not to return deterministic actions.
-        :return: the model's action and the next state
-            (used in recurrent policies)
-        """
-        def sample_action(obs: np.ndarray) -> int:
-            action_mask = self.action_mask_func(th.tensor(obs))
-            action=self.action_space.sample()
-            while(not action_mask[action]):
-                action=self.action_space.sample()
-            return action
-    
-        if not deterministic and np.random.rand() < self.exploration_rate:
-            if is_vectorized_observation(maybe_transpose(observation, self.observation_space), self.observation_space):
-                if isinstance(observation, dict):
-                    n_batch = observation[list(observation.keys())[0]].shape[0]
-                else:
-                    n_batch = observation.shape[0]
-                action = np.array([sample_action(observation) for _ in range(n_batch)])
-            else:
-                action = np.array(sample_action(observation))
-        else:
-            action, state = self.policy.predict(observation, state, episode_start, deterministic)
-        return action, state
 
     def learn(self: SelfMaskableDQN, *args, **kwargs) -> SelfMaskableDQN:
         super().learn(*args, **kwargs)

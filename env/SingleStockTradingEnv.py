@@ -112,7 +112,7 @@ class SingleStockTradingEnv(gym.Env):
         if self.share_num > 0:
             return [True, True, False]
         else:
-            return [True, True, False]
+            return [False, True, True]
 
     def _update_data(self) -> None:
         # bound checking
@@ -155,11 +155,11 @@ class SingleStockTradingEnv(gym.Env):
         else:
             return np.array([0])
 
-
-def action_mask_func(obs: th.Tensor) -> th.Tensor:
-    if obs[-1] == 1:
-        return th.Tensor([1, 1, 0])
-    elif obs[-1] == 0:
-        return th.Tensor([0, 1, 1])
-    else:
-        raise ValueError(f'Invalid obs {obs}')
+    @staticmethod
+    def action_mask_func(obs: th.Tensor) -> th.Tensor:
+        if obs[-1] == 1:
+            return th.Tensor([1, 1, 0])
+        elif obs[-1] == 0:
+            return th.Tensor([0, 1, 1])
+        else:
+            raise ValueError(f'Invalid obs {obs}')

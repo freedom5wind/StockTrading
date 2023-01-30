@@ -2,8 +2,6 @@ from typing import Dict, Tuple
 
 import optuna
 
-from env.SingleStockTradingEnv import action_mask_func
-
 
 GAMMA = 1
 TRAIN_TIME_STEP = 2000 * 100
