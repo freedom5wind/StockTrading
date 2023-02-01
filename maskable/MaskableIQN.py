@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Type, TypeVar, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from stable_baselines3.common.policies import BasePolicy
@@ -42,7 +42,7 @@ class MaskableIQN(IQN):
         super().__init__(policy, env, **kwargs)
         self.action_mask_func = env.action_mask_func
         assert self.action_space.n == \
-            self.action_mask_func(th.zeros_like(th.tensor(self.observation_space.sample()))).shape[0], \
+            self.action_mask_func(th.zeros_like(th.tensor(self.observation_space.sample()).unsqueeze(0))).shape[1], \
             'Invalid action mask function.'
         self.policy.action_mask_func = self.action_mask_func
 
@@ -113,5 +113,13 @@ class MaskableIQN(IQN):
         self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         self.logger.record("train/loss", np.mean(losses))
 
+    def predict(self, *args, action_masks: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
+        self._action_masks = action_masks
+        return super().predict(*args, **kwargs)
+
+
     def learn(self: SelfMaskableIQN, *args, **kwargs) -> SelfMaskableIQN:
         return super().learn(*args, **kwargs)
+        
+    def _excluded_save_params(self) -> List[str]:
+        return super()._excluded_save_params() + ["action_space"]

@@ -6,7 +6,7 @@ from pyfolio import timeseries
 from stable_baselines3.common.base_class import BaseAlgorithm
 from typing import List, Tuple, Union
 
-from env.SingleStockTradingEnv import SingleStockTradingEnv
+from environment.SingleStockTradingEnv import SingleStockTradingEnv
 
 # Dow 30 constituents in 2021/10
 DOW_30_TICKER = [

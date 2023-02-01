@@ -71,7 +71,7 @@ class MultiStockTradingEnv(gym.Env):
         assert len(action) == self.n_tickers + 1, f"Invalid action {action}."
         action = scipy.special.softmax(action)
 
-        self.terminal = self.day >= self.df.shape[0] - 2
+        self.terminal = self.day >= self.date.shape[0] - 2
 
         transaction = np.abs(self.portfolio - action).sum() * self.transaction_cost
         self.asset *= 1 - transaction
@@ -92,7 +92,7 @@ class MultiStockTradingEnv(gym.Env):
 
     def _update_data(self) -> None:
         # bound checking
-        assert self.day < self.df.shape[0]
+        assert self.day < self.date.shape[0]
         cur_dates = self.date[self.day-self.stack_frame+1 : self.day+1]
         self.data = self.df.loc[cur_dates]
 
@@ -105,4 +105,4 @@ class MultiStockTradingEnv(gym.Env):
     def changes(self) -> np.array:
         cur_dates = self.date[self.day]
         changes = (self.df.loc[cur_dates]['change'] / 100).to_numpy()
-        return np.insert(changes, 0, 1)
+        return np.insert(changes, 0, 0)

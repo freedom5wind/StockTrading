@@ -131,3 +131,4 @@ dmypy.json
 datasets/
 models/
 tensorboard_log/
+*.zip

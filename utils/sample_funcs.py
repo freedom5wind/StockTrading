@@ -1,3 +1,4 @@
+import math
 from typing import Dict, Tuple
 
 import optuna
@@ -146,7 +147,7 @@ def sample_a2c_param(trial: optuna.Trial) -> Tuple[Dict, int]:
     '''Sample hyperparameters and return them in a dictionary for model initiation.'''
     learning_rate = 3 * 10 ** (trial.suggest_int('learning_rate_3_exp', -5, -3))
     n_steps = 2 ** trial.suggest_int('n_steps_2exp', 0, 8)
-    rms_prop_eps = 10 ** trial.suggest_int('rms_prop_eps_exp', -5, -8)
+    rms_prop_eps = 10 ** trial.suggest_int('rms_prop_eps_exp', -8, -5)
     net_arch_layers = [2 ** trial.suggest_int('net_arch_dim_2exp', 6, 10)] \
         * trial.suggest_int('net_arch_layers', 3, 5)
 
@@ -161,6 +162,41 @@ def sample_a2c_param(trial: optuna.Trial) -> Tuple[Dict, int]:
         'policy_kwargs': { 'net_arch': net_arch_layers }
             }, train_time_step
 
+def sample_tqc_param(trial: optuna.Trial) -> Tuple[Dict, int]:
+    '''Sample hyperparameters and return them in a dictionary for model initiation.'''
+    learning_rate = 3 * 10 ** (trial.suggest_int('learning_rate_3_exp', -6, -3))
+    buffer_size = 10 ** (trial.suggest_int('buffer_size_exp', 4, 7))
+    learning_starts = 5 * 10 ** (trial.suggest_int('learning_start_5_exp', 0, 3))
+    batch_size = 2 ** trial.suggest_int('batch_size_2exp', 3, 7)
+    train_freq = 2 ** trial.suggest_int('train_freq_2exp', 3, 9)
+    gradient_steps = 2 ** trial.suggest_int('gradient_step_2exp', 1, 8)
+    target_update_interval = 10 ** trial.suggest_int('target_update_interval_exp', 1, 4)
+    n_quantiles = 2 ** trial.suggest_int('n_quantiles_2exp', 3, 9)
+    # top_quantiles_to_drop_per_net  = math.floor(n_quantiles * trial.suggest_float('top_quantiles_drop_ratio', 0, 0.4))
+    top_quantiles_to_drop_per_net = trial.suggest_int('top_quantiles_to_drop_per_net', 0, 5)
+    n_critics = trial.suggest_int('n_critics', 1, 5)
 
-# TODO: tqc
+    net_arch_layers = [2 ** trial.suggest_int('net_arch_dim_2exp', 6, 10)] \
+        * trial.suggest_int('net_arch_layers', 3, 5)
+
+    gamma = GAMMA
+    train_time_step = TRAIN_TIME_STEP
+
+    return {
+        'learning_rate': learning_rate,
+        'buffer_size': buffer_size,
+        'learning_starts': learning_starts,
+        'batch_size': batch_size,
+        'train_freq': train_freq,
+        'gradient_steps': gradient_steps,
+        'target_update_interval': target_update_interval,
+        'top_quantiles_to_drop_per_net': top_quantiles_to_drop_per_net,
+        'gamma': gamma,
+        'policy_kwargs': {
+             'net_arch': net_arch_layers,
+             'n_quantiles': n_quantiles,
+             'n_critics': n_critics
+             }
+        }, train_time_step
+
 # TODO: a2c * iqn

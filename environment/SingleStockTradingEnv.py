@@ -157,9 +157,10 @@ class SingleStockTradingEnv(gym.Env):
 
     @staticmethod
     def action_mask_func(obs: th.Tensor) -> th.Tensor:
-        if obs[-1] == 1:
-            return th.Tensor([0, 0, -th.inf])
-        elif obs[-1] == 0:
-            return th.Tensor([-th.inf, 0, 0])
-        else:
-            raise ValueError(f'Invalid obs {obs}')
+        # obs: (batch_size, action_space_n)
+        pos = obs[:, -1:]
+        no_selling = th.Tensor([0, 0, -th.inf]).to(obs.device)
+        no_buying = th.Tensor([-th.inf, 0, 0]).to(obs.device)
+        action_masks = pos.mul(no_selling).nan_to_num() \
+            + (1 - pos).mul(no_buying).nan_to_num()
+        return action_masks
