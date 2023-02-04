@@ -74,7 +74,7 @@ class MaskableIQN(IQN):
                 assert next_qa_sampled.shape == (batch_size, self.K, self.action_space.n)
                 # Apply action mask
                 action_mask = self.action_mask_func(replay_data.observations)
-                masked_next_qa_sampled = next_qa_sampled + action_mask.expand(batch_size, self.K, -1)
+                masked_next_qa_sampled = next_qa_sampled + action_mask.unsqueeze(-2)
                 # Compute the greedy actions which maximize the next Q values
                 next_greedy_actions = masked_next_qa_sampled.mean(dim=1, keepdim=True).argmax(dim=2, keepdim=True)
                 # Make "self.N2" copies of actions, and reshape to (batch_size, self.N2, 1)

@@ -98,8 +98,9 @@ class SingleStockTradingEnv(gym.Env):
             # return 0 for the first day.
             reward = 0
         else:
-            reward = np.log2(self.asset_memory[-1] / self.asset_memory[-2])
-        reward -= self.reward_bias * self.log_cumulative_return
+            reward = self.asset_memory[-1] - self.asset_memory[-2]
+        #     reward = np.log2(self.asset_memory[-1] / self.asset_memory[-2])
+        # reward -= self.reward_bias * self.log_cumulative_return
 
         assert not np.isnan(reward), f'Nan reward with assets: {self.asset_memory}'
         

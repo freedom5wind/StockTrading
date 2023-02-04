@@ -72,7 +72,7 @@ class MaskableQRDQN(QRDQN):
                 next_quantiles = self.quantile_net_target(replay_data.next_observations)
                 # Apply action mask
                 action_mask = self.action_mask_func(replay_data.observations)
-                masked_next_quantiles = next_quantiles + action_mask.expand(batch_size, self.n_quantiles, -1)
+                masked_next_quantiles = next_quantiles + action_mask.unsqueeze(-2)
                 # Compute the greedy actions which maximize the next Q values
                 next_greedy_actions = masked_next_quantiles.mean(dim=1, keepdim=True).argmax(dim=2, keepdim=True)
                 # Make "n_quantiles" copies of actions, and reshape to (batch_size, n_quantiles, 1)
