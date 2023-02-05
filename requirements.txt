@@ -11,3 +11,5 @@ stockstats
 tushare
 yfinance
 tensorboard
+plotly
+nbformat
