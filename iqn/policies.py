@@ -16,7 +16,7 @@ from torch import nn
 
 class CosineEmbeddingNetwork(nn.Module):
     '''Borrow from https://github.com/toshikwa/fqf-iqn-qrdqn.pytorch/fqf_iqn_qrdqn/network.py'''
-    def __init__(self, feature_dim, cosine_embedding=64, ):
+    def __init__(self, feature_dim, cosine_embedding=64):
         super(CosineEmbeddingNetwork, self).__init__()
 
         self.net = nn.Sequential(
