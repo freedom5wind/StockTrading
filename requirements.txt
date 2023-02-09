@@ -11,3 +11,4 @@ stockstats
 tushare
 yfinance
 tensorboard
+lightgbm

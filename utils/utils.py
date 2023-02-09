@@ -1,10 +1,12 @@
-import  optuna
 import os
+from typing import List, Tuple, Union
+
+import numpy as np
+import optuna
 import pandas as pd
 import pyfolio
 from pyfolio import timeseries
 from stable_baselines3.common.base_class import BaseAlgorithm
-from typing import List, Tuple, Union
 
 from environment.SingleStockTradingEnv import SingleStockTradingEnv
 
@@ -59,18 +61,31 @@ def calculate_sharpe_ratio(asset: List) -> float:
     else:
         return 0
 
-def simulate_trading(env: SingleStockTradingEnv, model: BaseAlgorithm) -> Tuple[List[float], List[int]]:
+# def simulate_trading(env: SingleStockTradingEnv, model: BaseAlgorithm) -> Tuple[List[float], List[int]]:
+#         """Simulate trading with model in env."""
+#         actions_memory = []
+#         obs = env.reset()
+#         dones = False
+#         while not dones:
+#             action, _ = model.predict(obs, deterministic=True)
+#             # action = action[()]
+#             actions_memory.append(action)
+#             obs, r, dones, _ = env.step(action)
+#         return env.asset_memory, actions_memory
+
+def simulate_trading_masked(env: SingleStockTradingEnv, model: BaseAlgorithm) -> Tuple[List[float], List[int]]:
         """Simulate trading with model in env."""
         actions_memory = []
         obs = env.reset()
         dones = False
-        for _ in range(env.df.shape[0] - 1):
-            if not dones:
-                action, _ = model.predict(obs, deterministic=True)
-                action = action[()]
-                actions_memory.append(action)
-                obs, r, dones, _ = env.step(action)
+        while not dones:
+            masks = np.array(env.action_masks())
+            action, _ = model.predict(obs, deterministic=True, action_masks=masks)
+            # action = action[()]
+            actions_memory.append(action)
+            obs, r, dones, _ = env.step(action)
         return env.asset_memory, actions_memory
+
 
 def get_daily_return(asset: pd.Series) -> pd.Series:
     return asset.pct_change(1)
