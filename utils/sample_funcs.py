@@ -232,4 +232,43 @@ def sample_tqc_param(trial: optuna.Trial) -> Tuple[Dict, int]:
              }
         }, train_time_step
 
-# TODO: a2c * iqn
+def sample_tqci_param(trial: optuna.Trial) -> Tuple[Dict, int]:
+    '''Sample hyperparameters and return them in a dictionary for model initiation.'''
+    learning_rate = 3 * 10 ** (trial.suggest_int('learning_rate_3_exp', -6, -3))
+    buffer_size = 10 ** (trial.suggest_int('buffer_size_exp', 4, 7))
+    learning_starts = 5 * 10 ** (trial.suggest_int('learning_starts_5_exp', 0, 3))
+    batch_size = 2 ** trial.suggest_int('batch_size_2exp', 3, 7)
+    tau = trial.suggest_float('tau', 5e-3, 1, log=True)
+    train_freq = 2 ** trial.suggest_int('train_freq_2exp', 3, 9)
+    gradient_steps = 2 ** trial.suggest_int('gradient_steps_2exp', 1, 8)
+    target_update_interval = 10 ** trial.suggest_int('target_update_interval_exp', 1, 4)
+    n_samples_critics = 2 ** trial.suggest_int('n_samples_critics_2exp', 3, 8)
+    # n_samples_target_critcs = 2 ** trial.suggest_int('n_samples_target_critcs_2exp', 3, 8)
+    n_samples_target_critcs = n_samples_critics
+    cos_embedding_dims = 2 ** trial.suggest_int('cos_embedding_dims_2exp', 3, 8)
+    n_critics = trial.suggest_int('n_critics', 1, 5)
+
+    net_arch_layers = [2 ** trial.suggest_int('net_arch_dim_2exp', 6, 10)] \
+        * trial.suggest_int('net_arch_layers', 3, 5)
+
+    gamma = GAMMA
+    train_time_step = TRAIN_TIME_STEP
+
+    return {
+        'learning_rate': learning_rate,
+        'buffer_size': buffer_size,
+        'learning_starts': learning_starts,
+        'batch_size': batch_size,
+        'tau': tau,
+        'train_freq': train_freq,
+        'gradient_steps': gradient_steps,
+        'target_update_interval': target_update_interval,
+        'gamma': gamma,
+        'policy_kwargs': {
+             'net_arch': net_arch_layers,
+             'n_samples_critics': n_samples_critics,
+             'n_samples_target_critcs': n_samples_target_critcs,
+             'cos_embedding_dims': cos_embedding_dims,
+             'n_critics': n_critics
+             }
+        }, train_time_step
