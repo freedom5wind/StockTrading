@@ -12,3 +12,5 @@ tushare
 yfinance
 tensorboard
 lightgbm
+plotly
+nbformat
