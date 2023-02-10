@@ -5,7 +5,7 @@ import optuna
 
 
 GAMMA = 1
-TRAIN_TIME_STEP = 2000 * 100
+TRAIN_TIME_STEP = 2000 * 500
 
 
 # ------------------------------------------------
@@ -34,13 +34,14 @@ def sample_mppo_param(trial: optuna.Trial) -> Tuple[Dict, int]:
 
 def sample_mdqn_param(trial: optuna.Trial) -> Tuple[Dict, int]:
     '''Sample hyperparameters and return them in a dictionary for model initiation.'''
-    learning_rate = 10 ** (trial.suggest_int('learning_rate_exp', -6, -3))
+    learning_rate = trial.suggest_float('learning_rate', 10e-6, 10e-3, log=True)
     buffer_size = 10 ** (trial.suggest_int('buffer_size_exp', 3, 6))
     learning_starts = 10 ** (trial.suggest_int('learning_start_exp', 0, 3))
-    batch_size = 2 ** trial.suggest_int('batch_size_2exp', 3, 7)
+    batch_size = 2 ** trial.suggest_int('batch_size_2exp', 3, 8)
+    tau = trial.suggest_float('tau', 10e-4, 1, log=True)
     train_freq = 2 ** trial.suggest_int('train_freq_2exp', 3, 9)
     gradient_steps = 2 ** trial.suggest_int('gradient_step_2exp', 1, 8)
-    target_update_interval = 10 ** trial.suggest_int('target_update_interval_exp', 1, 4)
+    target_update_interval = 10 ** trial.suggest_int('target_update_interval_exp', 1, 3)
     exploration_fraction = trial.suggest_float('exploration_fraction', 0.1, 0.5)
     exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.05, 0.2)
     net_arch_layers = [2 ** trial.suggest_int('net_arch_dim_2exp', 6, 10)] \
@@ -54,6 +55,7 @@ def sample_mdqn_param(trial: optuna.Trial) -> Tuple[Dict, int]:
         'buffer_size': buffer_size,
         'learning_starts': learning_starts,
         'batch_size': batch_size,
+        'tau': tau,
         'gamma': gamma,
         'train_freq': train_freq,
         'gradient_steps': gradient_steps,

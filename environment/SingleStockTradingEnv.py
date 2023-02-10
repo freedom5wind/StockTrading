@@ -98,9 +98,9 @@ class SingleStockTradingEnv(gym.Env):
             # return 0 for the first day.
             reward = 0
         else:
-            reward = self.asset_memory[-1] - self.asset_memory[-2]
-        #     reward = np.log2(self.asset_memory[-1] / self.asset_memory[-2])
-        # reward -= self.reward_bias * self.log_cumulative_return
+            # reward = self.asset_memory[-1] - self.asset_memory[-2]
+            reward = np.log2(self.asset_memory[-1] / self.asset_memory[-2])
+        reward -= self.reward_bias * self.log_cumulative_return
 
         assert not np.isnan(reward), f'Nan reward with assets: {self.asset_memory}'
         
@@ -117,7 +117,7 @@ class SingleStockTradingEnv(gym.Env):
 
     def _update_data(self) -> None:
         # bound checking
-        assert self.day < self.df.shape[0]
+        assert self.day < self.df.shape[0], f'day {self.day} > {self.df.shape[0]} out of range'
 
         self.data = self.df.iloc[self.day-self.stack_frame+1 : self.day+1, :]
         if self.ignore_close:
