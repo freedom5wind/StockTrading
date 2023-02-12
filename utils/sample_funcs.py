@@ -36,11 +36,11 @@ def sample_mdqn_param(trial: optuna.Trial) -> Tuple[Dict, int]:
     '''Sample hyperparameters and return them in a dictionary for model initiation.'''
     learning_rate = trial.suggest_float('learning_rate', 10e-6, 10e-3, log=True)
     buffer_size = 10 ** (trial.suggest_int('buffer_size_exp', 3, 6))
-    learning_starts = 10 ** (trial.suggest_int('learning_start_exp', 0, 3))
+    learning_starts = 10 ** (trial.suggest_int('learning_starts_exp', 0, 3))
     batch_size = 2 ** trial.suggest_int('batch_size_2exp', 3, 8)
     tau = trial.suggest_float('tau', 10e-4, 1, log=True)
     train_freq = 2 ** trial.suggest_int('train_freq_2exp', 3, 9)
-    gradient_steps = 2 ** trial.suggest_int('gradient_step_2exp', 1, 8)
+    gradient_steps = 2 ** trial.suggest_int('gradient_steps_2exp', 1, 8)
     target_update_interval = 10 ** trial.suggest_int('target_update_interval_exp', 1, 3)
     exploration_fraction = trial.suggest_float('exploration_fraction', 0.1, 0.5)
     exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.05, 0.2)

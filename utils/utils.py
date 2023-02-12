@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import optuna
@@ -59,19 +59,22 @@ def calculate_sharpe_ratio(asset: List) -> float:
         sharpe = (252**0.5) * df['daily_return'].mean() / df['daily_return'].std()
         return sharpe
     else:
-        return 0
+        return np.nan
 
-# def simulate_trading(env: SingleStockTradingEnv, model: BaseAlgorithm) -> Tuple[List[float], List[int]]:
-#         """Simulate trading with model in env."""
-#         actions_memory = []
-#         obs = env.reset()
-#         dones = False
-#         while not dones:
-#             action, _ = model.predict(obs, deterministic=True)
-#             # action = action[()]
-#             actions_memory.append(action)
-#             obs, r, dones, _ = env.step(action)
-#         return env.asset_memory, actions_memory
+def simulate_trading(env, model: BaseAlgorithm) -> Tuple[List[float], List[Any], List[float]]:
+        """Simulate trading with model in env."""
+        action_memory = []
+        reward_memory = []
+
+        dones = False
+        obs = env.reset()
+
+        while not dones:
+            action, _ = model.predict(obs, deterministic=True)
+            action_memory.append(action)
+            obs, r, dones, _ = env.step(action)
+            reward_memory.append(r)
+        return env.asset_memory, action_memory, reward_memory
 
 def simulate_trading_masked(env: SingleStockTradingEnv, model: BaseAlgorithm) -> Tuple[List[float], List[int]]:
         """Simulate trading with model in env."""
@@ -81,7 +84,6 @@ def simulate_trading_masked(env: SingleStockTradingEnv, model: BaseAlgorithm) ->
         while not dones:
             masks = np.array(env.action_masks())
             action, _ = model.predict(obs, deterministic=True, action_masks=masks)
-            # action = action[()]
             actions_memory.append(action)
             obs, r, dones, _ = env.step(action)
         return env.asset_memory, actions_memory
@@ -107,6 +109,26 @@ def backtest_plot(test_returns: pd.Series, baseline_returns: pd.Series) -> None:
         pyfolio.create_full_tear_sheet(
             returns=test_returns, benchmark_rets=baseline_returns, set_context=False
         )
+
+def split_data(
+        df_dict: Dict[str, pd.DataFrame], 
+        test_start: str, 
+        trade_start: str
+        ) -> Tuple[Dict[str, pd.DataFrame], Dict[str, pd.DataFrame], Dict[str, pd.DataFrame]]:
+    df_dict_train = dict()
+    df_dict_test = dict()
+    df_dict_trade = dict()
+
+    test_start = pd.to_datetime(test_start, format='%Y-%m-%d')
+    trade_start = pd.to_datetime(trade_start, format='%Y-%m-%d')
+
+    for tic, df in df_dict.items():
+        df.date = pd.to_datetime(df.date, format='%Y-%m-%d')
+        df_dict_train[tic] = df.loc[df.date < test_start].sort_index(ascending=True).copy()
+        df_dict_test[tic] = df.loc[(df.date >= test_start) & (df.date < trade_start)].sort_index(ascending=True).copy()
+        df_dict_trade[tic] = df.loc[df.date >= trade_start].sort_index(ascending=True).copy()
+
+    return df_dict_train, df_dict_test, df_dict_trade
 
 class PruneCallback:
     '''

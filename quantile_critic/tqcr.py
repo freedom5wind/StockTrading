@@ -64,9 +64,13 @@ class TQCR(TQC):
         "MlpPolicy": TQCPolicy,
     }
 
-    def __init__(self, *args, risk_distortion_measure: Callable[[th.Tensor], th.Tensor], **kwargs):
+    def __init__(
+            self, 
+            *args, 
+            utility_func: Callable[[th.Tensor], th.Tensor] = None, 
+            **kwargs):
         super().__init__(*args, **kwargs)
-        self.risk_distortion_measure = risk_distortion_measure
+        self.utility_func = utility_func
 
     def train(self, gradient_steps: int, batch_size: int = 64) -> None:
         # Switch to train mode (this affects batch norm / dropout)
@@ -127,7 +131,8 @@ class TQCR(TQC):
                 # n_target_quantiles = self.critic.quantiles_total - self.top_quantiles_to_drop_per_net * self.critic.n_critics
                 # next_quantiles, _ = th.sort(next_quantiles.reshape(batch_size, -1))
                 # next_quantiles = next_quantiles[:, :n_target_quantiles]
-                next_quantiles = self.risk_distortion_measure(next_quantiles)
+                next_quantiles, _ = th.sort(next_quantiles.reshape(batch_size, -1))
+                next_quantiles = self.utility_func(next_quantiles)
                 assert len(next_quantiles.shape) == 2 and next_quantiles.shape[0] == batch_size, \
                     f'Tensor returned by risk distortion measure has invalid shape {next_quantiles.shape}'
 

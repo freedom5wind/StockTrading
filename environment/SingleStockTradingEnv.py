@@ -62,7 +62,7 @@ class SingleStockTradingEnv(gym.Env):
         self.day = self.stack_frame - 1
         self.share_num = 0
         self.account = self.initial_cash
-        self.asset_memory = []
+        self.asset_memory = [self.account]
         self.episode += 1
 
         # update state
@@ -94,12 +94,8 @@ class SingleStockTradingEnv(gym.Env):
         self._update_state()
         self.asset_memory.append(self.asset)
 
-        if self.day == self.stack_frame:
-            # return 0 for the first day.
-            reward = 0
-        else:
-            # reward = self.asset_memory[-1] - self.asset_memory[-2]
-            reward = np.log2(self.asset_memory[-1] / self.asset_memory[-2])
+        # reward = self.asset_memory[-1] - self.asset_memory[-2]
+        reward = np.log2(self.asset_memory[-1] / self.asset_memory[-2])
         reward -= self.reward_bias * self.log_cumulative_return
 
         assert not np.isnan(reward), f'Nan reward with assets: {self.asset_memory}'

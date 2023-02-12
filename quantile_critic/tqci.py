@@ -4,13 +4,12 @@ from gym import spaces
 import numpy as np
 import torch as th
 from sb3_contrib.tqc import TQC
-from sb3_contrib.tqc.policies import TQCPolicy, Actor
+from sb3_contrib.tqc.policies import Actor
 from stable_baselines3.common.preprocessing import get_action_dim
 from stable_baselines3.common.policies import BasePolicy, BaseModel
 from stable_baselines3.common.torch_layers import (
     BaseFeaturesExtractor,
     FlattenExtractor,
-    NatureCNN,
     create_mlp,
     get_actor_critic_arch,
 )
@@ -24,13 +23,17 @@ from iqn.policies import CosineEmbeddingNetwork
 
 
 class QuantileNetwork(nn.Module):
+    '''
+    :param risk_distortion_measure: feed taus to it, if its type is Callable[[th.Tensor], th.Tensor],
+        otherwise, use taus._apply with it.
+    '''
     def __init__(
             self, 
             features_dim: int, 
             net_arch: List[int], 
             cos_embedding_dims: int, 
             n_samples: int, 
-            risk_distortion_measure: Callable[[th.Tensor], th.Tensor] = None,
+            risk_distortion_measure: Union[Callable[[th.Tensor], th.Tensor], Callable[[float], float]] = None,
             activation_fn: Type[nn.Module] = nn.ReLU, 
     ):
         super().__init__()
@@ -67,7 +70,10 @@ class QuantileNetwork(nn.Module):
         )
 
         if self.risk_distortion_measure is not None:
-            taus = taus.apply_(self.risk_distortion_measure)
+            if isinstance(self.risk_distortion_measure, Callable[[th.Tensor], th.Tensor]):
+                taus = self.risk_distortion_measure(taus)
+            elif isinstance(self.risk_distortion_measure, Callable[[float], float]):
+                taus = taus.apply_(self.risk_distortion_measure)
 
         cosine_embedding = self.cosine_net(taus)
 
@@ -213,7 +219,10 @@ class TQCIPolicy(BasePolicy):
         n_samples_critics: int = 64,
         n_samples_target_critcs: int = 64,
         cos_embedding_dims: int = 64,
-        risk_distortion_measures: Union[Callable[[th.Tensor], th.Tensor], List[Callable[[th.Tensor], th.Tensor]]] = None,
+        risk_distortion_measures: Union[Callable[[th.Tensor], th.Tensor], \
+                                        List[Callable[[th.Tensor], th.Tensor]], \
+                                        Callable[[float], float], \
+                                        List[Callable[[float], float]]] = None,
         n_critics: int = 2,
         share_features_extractor: bool = False,
     ):
