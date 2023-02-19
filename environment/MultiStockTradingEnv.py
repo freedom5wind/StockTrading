@@ -4,7 +4,7 @@ import gym
 from gym import spaces
 import numpy as np
 import pandas as pd
-import scipy
+from scipy.special import softmax
 
 
 class MultiStockTradingEnv(gym.Env):
@@ -46,8 +46,8 @@ class MultiStockTradingEnv(gym.Env):
         self.observation_shape = \
             (self.stack_frame * self.feature_dims * self.n_tickers + (self.n_tickers + 1),)
         # Action space includes cash(index 0) and n tickers.
-        self.action_space = spaces.Box(low=0, high=1, shape=(self.n_tickers + 1,)) 
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.observation_shape)
+        self.action_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.n_tickers + 1,))
+        self.observation_space = spaces.Box(low=-100., high=100., shape=self.observation_shape)
 
         self.reset()
 
@@ -69,11 +69,11 @@ class MultiStockTradingEnv(gym.Env):
 
     def step(self, action: np.array) -> Tuple[np.array, float, bool, Dict]:
         assert len(action) == self.n_tickers + 1, f"Invalid action {action}."
-        action = scipy.special.softmax(action)
+        action = softmax(action)
 
         self.terminal = self.day >= self.date.shape[0] - 2
 
-        transaction = np.abs(self.portfolio - action).sum() * self.transaction_cost
+        transaction = np.abs(self.portfolio[1:] - action[1:]).sum() * self.transaction_cost
         self.asset *= 1 - transaction
         self.portfolio = action
 
