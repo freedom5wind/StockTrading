@@ -19,8 +19,13 @@ class MaskableQRDQNPolicy(QRDQNPolicy):
         # Apply action mask
         action_mask = self.action_mask_func(obs)
         q_values += action_mask.expand(q_values.shape[0], -1)
-        # Greedy action
-        action = q_values.argmax(dim=1).reshape(-1)
+
+        if deterministic:
+            # Greedy action
+            action = q_values.argmax(dim=1).reshape(-1)
+        else:
+            action =  q_values.exp().multinomial(1).reshape(-1)
+
         return action
 
 

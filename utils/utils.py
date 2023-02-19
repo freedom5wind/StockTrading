@@ -61,7 +61,7 @@ def calculate_sharpe_ratio(asset: List) -> float:
     else:
         return np.nan
 
-def simulate_trading(env, model: BaseAlgorithm) -> Tuple[List[float], List[Any], List[float]]:
+def simulate_trading(env, model: BaseAlgorithm, deterministic: bool = False) -> Tuple[List[float], List[Any], List[float]]:
         """Simulate trading with model in env."""
         action_memory = []
         reward_memory = []
@@ -70,20 +70,20 @@ def simulate_trading(env, model: BaseAlgorithm) -> Tuple[List[float], List[Any],
         obs = env.reset()
 
         while not dones:
-            action, _ = model.predict(obs, deterministic=True)
+            action, _ = model.predict(obs, deterministic=deterministic)
             action_memory.append(action)
             obs, r, dones, _ = env.step(action)
             reward_memory.append(r)
         return env.asset_memory, action_memory, reward_memory
 
-def simulate_trading_masked(env: SingleStockTradingEnv, model: BaseAlgorithm) -> Tuple[List[float], List[int]]:
+def simulate_trading_masked(env: SingleStockTradingEnv, model: BaseAlgorithm, deterministic: bool = False) -> Tuple[List[float], List[int]]:
         """Simulate trading with model in env."""
         actions_memory = []
         obs = env.reset()
         dones = False
         while not dones:
             masks = np.array(env.action_masks())
-            action, _ = model.predict(obs, deterministic=True, action_masks=masks)
+            action, _ = model.predict(obs, deterministic=deterministic, action_masks=masks)
             actions_memory.append(action)
             obs, r, dones, _ = env.step(action)
         return env.asset_memory, actions_memory
