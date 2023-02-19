@@ -33,7 +33,7 @@ class QuantileNetwork(nn.Module):
             net_arch: List[int], 
             cos_embedding_dims: int, 
             n_samples: int, 
-            risk_distortion_measure: Union[Callable[[th.Tensor], th.Tensor], Callable[[float], float]] = None,
+            risk_distortion_measure: Callable[[th.Tensor], th.Tensor] = None,
             activation_fn: Type[nn.Module] = nn.ReLU, 
     ):
         super().__init__()
@@ -70,10 +70,7 @@ class QuantileNetwork(nn.Module):
         )
 
         if self.risk_distortion_measure is not None:
-            if isinstance(self.risk_distortion_measure, Callable[[th.Tensor], th.Tensor]):
-                taus = self.risk_distortion_measure(taus)
-            elif isinstance(self.risk_distortion_measure, Callable[[float], float]):
-                taus = taus.apply_(self.risk_distortion_measure)
+            taus = self.risk_distortion_measure(taus)
 
         cosine_embedding = self.cosine_net(taus)
 
