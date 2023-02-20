@@ -1,18 +1,26 @@
-from typing import Callable, Dict, Type, TypeVar
+from typing import Callable, Dict, Type, TypeVar, Optional
 
 import numpy as np
 import torch as th
 from stable_baselines3.common.policies import BasePolicy
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.type_aliases import MaybeCallback
 from stable_baselines3.common.utils import polyak_update
 
 from sb3_contrib.common.utils import quantile_huber_loss
 from sb3_contrib.tqc import TQC
-from sb3_contrib.tqc.policies import TQCPolicy
+from sb3_contrib.tqc.policies import Actor, TQCPolicy
 
+class SoftmaxActor(Actor):
+    def forward(self, obs: th.Tensor, deterministic: bool = False) -> th.Tensor:
+        return th.softmax(super().forward(obs, deterministic), dim=-1)
+
+class TQCRPolicy(TQCPolicy):
+    def make_actor(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> SoftmaxActor:
+        actor_kwargs = self._update_features_extractor(self.actor_kwargs, features_extractor)
+        return SoftmaxActor(**actor_kwargs).to(self.device)
 
 SelfTQCR = TypeVar("SelfTQCR", bound="TQCR")
-
 
 class TQCR(TQC):
     """
@@ -61,16 +69,19 @@ class TQCR(TQC):
     """
 
     policy_aliases: Dict[str, Type[BasePolicy]] = {
-        "MlpPolicy": TQCPolicy,
+        "MlpPolicy": TQCRPolicy,
     }
 
     def __init__(
             self, 
             *args, 
-            utility_func: Callable[[th.Tensor], th.Tensor] = None, 
+            utility_func: th.Tensor = None, 
             **kwargs):
         super().__init__(*args, **kwargs)
         self.utility_func = utility_func
+        if self.utility_func is not None:
+            n_quantiles = self.policy.critic_kwargs["n_quantiles"]
+            assert len(utility_func) == self.policy.critic_kwargs["n_quantiles"], f"utility_func: {len(utility_func)}, quantile: {n_quantiles}"
 
     def train(self, gradient_steps: int, batch_size: int = 64) -> None:
         # Switch to train mode (this affects batch norm / dropout)
@@ -132,7 +143,8 @@ class TQCR(TQC):
                 # next_quantiles, _ = th.sort(next_quantiles.reshape(batch_size, -1))
                 # next_quantiles = next_quantiles[:, :n_target_quantiles]
                 next_quantiles, _ = th.sort(next_quantiles.reshape(batch_size, -1))
-                next_quantiles = self.utility_func(next_quantiles)
+                if self.utility_func is not None:
+                    next_quantiles *= self.utility_func
                 assert len(next_quantiles.shape) == 2 and next_quantiles.shape[0] == batch_size, \
                     f'Tensor returned by risk distortion measure has invalid shape {next_quantiles.shape}'
 
@@ -187,7 +199,7 @@ class TQCR(TQC):
         reset_num_timesteps: bool = True,
         progress_bar: bool = False,
     ) -> SelfTQCR:
-
+        
         return super().learn(
             total_timesteps=total_timesteps,
             callback=callback,

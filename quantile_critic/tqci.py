@@ -163,6 +163,9 @@ class IQNCritic(BaseModel):
         taus = th.stack(list_taus, dim=1)
         return samples, taus
 
+class SoftmaxActor(Actor):
+    def forward(self, obs: th.Tensor, deterministic: bool = False) -> th.Tensor:
+        return th.softmax(super().forward(obs, deterministic), dim=-1)
 
 class TQCIPolicy(BasePolicy):
     """
@@ -231,7 +234,7 @@ class TQCIPolicy(BasePolicy):
             optimizer_class=optimizer_class,
             optimizer_kwargs=optimizer_kwargs,
             normalize_images=normalize_images,
-            squash_output=True,
+            squash_output=False,
         )
 
         if net_arch is None:
@@ -342,9 +345,9 @@ class TQCIPolicy(BasePolicy):
         """
         self.actor.reset_noise(batch_size=batch_size)
 
-    def make_actor(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> Actor:
+    def make_actor(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> SoftmaxActor:
         actor_kwargs = self._update_features_extractor(self.actor_kwargs, features_extractor)
-        return Actor(**actor_kwargs).to(self.device)
+        return SoftmaxActor(**actor_kwargs).to(self.device)
 
     def forward(self, obs: th.Tensor, deterministic: bool = False) -> th.Tensor:
         return self._predict(obs, deterministic=deterministic)

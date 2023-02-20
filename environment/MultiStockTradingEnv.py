@@ -46,8 +46,8 @@ class MultiStockTradingEnv(gym.Env):
         self.observation_shape = \
             (self.stack_frame * self.feature_dims * self.n_tickers + (self.n_tickers + 1),)
         # Action space includes cash(index 0) and n tickers.
-        self.action_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.n_tickers + 1,))
-        self.observation_space = spaces.Box(low=-100., high=100., shape=self.observation_shape)
+        self.action_space = spaces.Box(low=0, high=1, shape=(self.n_tickers + 1,))
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.observation_shape)
 
         self.reset()
 
@@ -69,7 +69,8 @@ class MultiStockTradingEnv(gym.Env):
 
     def step(self, action: np.array) -> Tuple[np.array, float, bool, Dict]:
         assert len(action) == self.n_tickers + 1, f"Invalid action {action}."
-        action = softmax(action)
+        assert 1.0 - np.sum(action) < 10e-5, f'{np.sum(action)}, {action}'
+        action[0] += 1.0 - np.sum(action)
 
         self.terminal = self.day >= self.date.shape[0] - 2
 
